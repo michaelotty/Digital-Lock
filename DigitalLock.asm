@@ -1,6 +1,10 @@
 #include P16F84A.INC
 __config _XT_OSC  &  _WDT_OFF & _PWRTE_ON
 
+DELAY_COUNT1    EQU     H'21'
+DELAY_COUNT2    EQU     H'22'
+DELAY_COUNT3    EQU     H'23'
+
 org h'0'
     goto    MAIN
 org h'4'
@@ -24,16 +28,100 @@ MAIN
     bcf	    INTCON, INTF
 
 loop
-    movlw   B'11111001'
-    movfw   PORTB
+    ;Display L
     movlw   B'11111101'
-    movfw   PORTA
-    goto loop
+    movwf   PORTA    
+    movlw   B'11111001'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Output to row 1
+    movlw   B'00000001'
+    movwf   PORTB
+    movlw   B'00000001'
+    movwf   PORTA
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Display L
+    movlw   B'11111101'
+    movwf   PORTA    
+    movlw   B'11111001'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Output to row 2
+    movlw   B'00001000'
+    movwf   PORTA
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Display L
+    movlw   B'11111101'
+    movwf   PORTA    
+    movlw   B'11111001'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Output to row 3
+    movlw   B'00001000'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Display L
+    movlw   B'11111101'
+    movwf   PORTA    
+    movlw   B'11111001'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Output to row 4
+    movlw   B'00000100'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    ;Display L
+    movlw   B'11111101'
+    movwf   PORTA    
+    movlw   B'11111001'
+    movwf   PORTB
+    call    delay2
+    clrf    PORTB
+    clrf    PORTA
+    goto    loop
 
 interupt
-
+    btfss   PORTB,0
+    call    something
+    
+    movlw   B'11111101'
+    movwf   PORTA    
+    movlw   B'11110001'
+    movwf   PORTB 
+    goto    interupt
     retfie
+    
+;something
+;    movlw   B'11111101'
+;    movwf   PORTA    
+;    movlw   B'11110001'
+;    movwf   PORTB
+;    return
+    
+delay2 ;delay inbetween powering segments
+    movlw   H'AA'           ;initialise delay counters
+    movwf   DELAY_COUNT1
+delay_loop2 
+    decfsz  DELAY_COUNT1,F 
+    goto    delay_loop2  
 
+    return
 end
     
     

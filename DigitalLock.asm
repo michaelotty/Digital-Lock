@@ -24,7 +24,10 @@ MAIN
     bcf	    INTCON, INTF
 
 loop
-
+    movlw   B'11111001'
+    movfw   PORTB
+    movlw   B'11111101'
+    movfw   PORTA
     goto loop
 
 interupt

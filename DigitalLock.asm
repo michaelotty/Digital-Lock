@@ -4,30 +4,30 @@ __config _XT_OSC  &  _WDT_OFF & _PWRTE_ON
 DELAY_COUNT1    EQU     H'21'
 DELAY_COUNT2    EQU     H'22'
 DELAY_COUNT3    EQU     H'23'
-Digit1		EQU     H'0D'
-Digit2		EQU     H'0E'
-Digit3		EQU     H'0F'
-Digit4		EQU     H'10'
-D1		EQU     H'11'
-D2		EQU     H'12'
-D3		EQU     H'13'
-D4		EQU     H'14'
-HashTag		EQU     H'15'
+Digit1			EQU     H'0D'
+Digit2			EQU     H'0E'
+Digit3			EQU     H'0F'
+Digit4			EQU     H'10'
+D1				EQU     H'11'
+D2				EQU     H'12'
+D3				EQU     H'13'
+D4				EQU     H'14'
+HashTag			EQU     H'15'
 
 org h'0'
-    goto    MAIN
+    goto    	MAIN
 org h'4'
     call    interupt
     goto    loop
 ;-------------------------------------------------------------------------------
 MAIN
 
-    bsf        STATUS,5        ;select bank 1
+    bsf     STATUS,5        ;select bank 1
     movlw   B'01110000'        ;Set port RB3-6 as inputs
     movwf   TRISB
     movlw   B'00000000'        ;Set up all of PORTA as outputs
     movwf   TRISA
-    bcf        STATUS,5        ;reselect bank 0
+    bcf   	STATUS,5        ;reselect bank 0
     
     ;Initialise the code
     movlw   D'1'
@@ -45,9 +45,9 @@ MAIN
     bsf	    INTCON, RBIE        ;Interupts on RB4 -RB7
     bsf	    INTCON, GIE
     bcf	    INTCON, INTF
-    
-    CodeSetUp
 
+;-------------------------------------------------------------------------------
+CodeSetUp
     
 loop
 ;Display L
@@ -83,6 +83,7 @@ loop
 ;    clrf    PORTA
     goto    loop
 
+;-------------------------------------------------------------------------------
 interupt
     movlw   B'00000000'
     movwf   PORTB
@@ -167,6 +168,7 @@ CodeCheck
     btfsc   STATUS,Z
     call    Unlock
     return
+;-------------------------------------------------------------------------------
 Unlock
 ;Display U
     movlw   B'11111100'
@@ -210,10 +212,3 @@ VariableCheck
 
     return     
 end
-    
-    
-
-
-
-
-

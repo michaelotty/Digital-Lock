@@ -111,6 +111,7 @@ delay_loop2
 
     return
     
+;-------------------------------------------------------------------------------
 Conversion
 
 Row1
@@ -147,6 +148,7 @@ Row4
     movlw   D'0'
     return
     
+;-------------------------------------------------------------------------------
 CodeCheck
     movfw   D1   
     subwf   Digit1,w
@@ -168,9 +170,10 @@ CodeCheck
     btfsc   STATUS,Z
     call    Unlock
     return
+	
 ;-------------------------------------------------------------------------------
-Unlock
 ;Display U
+Unlock
     movlw   B'11111100'
     movwf   PORTA    
     movlw   B'11111101'

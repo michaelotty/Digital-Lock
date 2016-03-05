@@ -4,32 +4,35 @@ __config _XT_OSC  &  _WDT_OFF & _PWRTE_ON
 DELAY_COUNT1    EQU     H'21'
 DELAY_COUNT2    EQU     H'22'
 DELAY_COUNT3    EQU     H'23'
-Digit1			EQU     H'0D'
+;File registers for pre-determined digits 
+Digit1			EQU     H'0D' 
 Digit2			EQU     H'0E'
 Digit3			EQU     H'0F'
 Digit4			EQU     H'10'
+;File registers for digits inutted by user
 D1				EQU     H'11'
 D2				EQU     H'12'
 D3				EQU     H'13'
 D4				EQU     H'14'
-HashTag			EQU     H'15'
+HashTag	                        EQU     H'15' 
+TempVar		                EQU     H'16' ;Temporary storage of the digit entered by user
 
 org h'0'
     goto    	MAIN
 org h'4'
-    call    interupt
+    call    interrupt
     goto    loop
 ;-------------------------------------------------------------------------------
 MAIN
 
     bsf     STATUS,5        ;select bank 1
-    movlw   B'01110000'        ;Set port RB3-6 as inputs
+    movlw   B'01110000'        ;Set port RB4-6 as inputs
     movwf   TRISB
     movlw   B'00000000'        ;Set up all of PORTA as outputs
     movwf   TRISA
     bcf   	STATUS,5        ;reselect bank 0
     
-    ;Initialise the code
+    ;Initialise the 4-digit code as 1234
     movlw   D'1'
     movwf   Digit1
     movlw   D'2'
@@ -55,55 +58,52 @@ loop
     movwf   PORTA    
     movlw   B'11111011'
     movwf   PORTB
-    ;Output to row 1
+;Output to row 1
     movlw   B'11100001'
     movwf   PORTA    
     movlw   B'11111001'
     movwf   PORTB
     call    delay2
     clrf    PORTB
-;    clrf    PORTA
-    ;Output to row 2
+;Output to row 2
     movlw   B'11100101'
     movwf   PORTA    
     movlw   B'11111000'
     movwf   PORTB
-;    clrf    PORTA
-    ;Output to row 3
+;Output to row 3
     movlw   B'11100001'
     movwf   PORTA    
     movlw   B'11111010'
     movwf   PORTB
-;    clrf    PORTA
-    ;Output to row 4
+;Output to row 4
     movlw   B'11101001'
     movwf   PORTA    
     movlw   B'11111000'
     movwf   PORTB
-;    clrf    PORTA
     goto    loop
 
 ;-------------------------------------------------------------------------------
-interupt
-    movlw   B'00000000'
-    movwf   PORTB
+interrupt
     btfsc   HashTag,0
     goto    tag1
     btfss   PORTB,2
     goto    loop
     btfss   PORTB,6
     goto    loop
-    movlw   D'1'
+    movlw   D'1' 
     movwf   HashTag
 tag1    
     call    Conversion    
     call    VariableCheck
+    movfw   D4   
+    xorlw   D'0'
+    btfsc   STATUS,Z
     call    CodeCheck
-    bcf     INTCON, RBIE
+    bcf     INTCON, RBIF
     retfie
     
-delay2 ;delay inbetween powering segments
-    movlw   H'20'           ;initialise delay counters
+delay2		|;delay inbetween powering segments
+    movlw   H'20'           
     movwf   DELAY_COUNT1
 delay_loop2
     decfsz  DELAY_COUNT1,F
@@ -123,6 +123,7 @@ Row1
     movlw   D'2'
     btfsc   PORTB,6
     movlw   D'3'
+    movwf		TempVar
 Row2
     btfss   PORTA,3
     goto    Row3    
@@ -132,6 +133,7 @@ Row2
     movlw   D'5'
     btfsc   PORTB,6
     movlw   D'6'
+    movwf		TempVar
 Row3
     btfss   PORTB,3
     goto    Row4    
@@ -141,15 +143,29 @@ Row3
     movlw   D'8'
     btfsc   PORTB,6
     movlw   D'9'
+    movwf		TempVar
 Row4
     btfss   PORTB,2
     goto    Row1  
+    btfsc	  PORTB,4
+    nop
     btfsc   PORTB,5
     movlw   D'0'
+    btfss   PORTB,6
+    goto    skip_clear
+    clrf    D1
+    clrf    D2
+    clrf    D3
+    clrf    D4
+    
+    
+skip_clear
+	  movwf		TempVar         
     return
     
 ;-------------------------------------------------------------------------------
 CodeCheck
+		
     movfw   D1   
     subwf   Digit1,w
     btfss   STATUS,Z
@@ -174,43 +190,45 @@ CodeCheck
 ;-------------------------------------------------------------------------------
 ;Display U
 Unlock
+;fixit
     movlw   B'11111100'
     movwf   PORTA    
     movlw   B'11111101'
     movwf   PORTB
+;fixit
     call    delay2
     call    delay2
     call    delay2
     call    delay2
-    call    delay2
-    call    delay2
-    call    delay2
-    call    delay2
-    call    delay2
-    call    delay2
+    call		delay2
     clrf    PORTB
     clrf    PORTA
     return
     
-VariableCheck     
+VariableCheck
+     
     movfw   D1   
     xorlw   D'0'
-    btfsc   STATUS,Z
+    btfss   STATUS,Z
+    movfw	TempVar
     movwf   D1
     
     movfw   D2   
     xorlw   D'0'
-    btfsc   STATUS,Z
+    btfss   STATUS,Z
+    movfw	TempVar
     movwf   D2
     
     movfw   D3   
     xorlw   D'0'
-    btfsc   STATUS,Z
+    btfss   STATUS,Z
+    movfw	TempVar
     movwf   D3
-    
+     
     movfw   D4   
     xorlw   D'0'
-    btfsc   STATUS,Z
+    btfss   STATUS,Z
+    movfw	TempVar
     movwf   D4
 
     return     

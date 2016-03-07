@@ -16,6 +16,7 @@ D3				EQU     H'13'
 D4				EQU     H'14'
 HashTag	                        EQU     H'15' 
 TempVar		                EQU     H'16' ;Temporary storage of the digit entered by user
+TempVar2			EQU	H'17'
 
 org h'0'
     goto    	MAIN
@@ -58,52 +59,65 @@ loop
     movwf   PORTA    
     movlw   B'11111011'
     movwf   PORTB
+    call    delay2
 ;Output to row 1
     movlw   B'11100001'
     movwf   PORTA    
     movlw   B'11111001'
     movwf   PORTB
     call    delay2
-    clrf    PORTB
 ;Output to row 2
     movlw   B'11100101'
     movwf   PORTA    
     movlw   B'11111000'
     movwf   PORTB
+    call    delay2
 ;Output to row 3
     movlw   B'11100001'
     movwf   PORTA    
     movlw   B'11111010'
     movwf   PORTB
+    call    delay2
 ;Output to row 4
     movlw   B'11101001'
     movwf   PORTA    
     movlw   B'11111000'
     movwf   PORTB
+    call    delay2 
     goto    loop
 
 ;-------------------------------------------------------------------------------
 interrupt
+    movwf   TempVar2 
+    btfsc   PORTB,6
+    goto    Unlock
+    movlw   D'1'
+    movwf   HashTag
+debounce
+    btfsc   PORTB,4
+    goto    debounce
+    btfsc   PORTB,5
+    goto    debounce
+    btfsc   PORTB,6
+    goto    debounce
     btfsc   HashTag,0
-    goto    tag1
-    btfss   PORTB,2
-    goto    loop
-    btfss   PORTB,6
+    call    Unlock
+    btfsc   PORTB,6
     goto    loop
     movlw   D'1' 
     movwf   HashTag
 tag1    
-    call    Conversion    
-    call    VariableCheck
-    movfw   D4   
-    xorlw   D'0'
-    btfsc   STATUS,Z
-    call    CodeCheck
-    bcf     INTCON, RBIF
+;    call    Conversion    
+;    call    VariableCheck
+;    movfw   D4   
+;    xorlw   D'0'
+;    btfss   STATUS,Z
+;    call    CodeCheck
+;    bcf     INTCON, RBIF
     retfie
     
-delay2		|;delay inbetween powering segments
-    movlw   H'20'           
+delay2		;delay inbetween powering segments
+    movlw   H'30'           
     movwf   DELAY_COUNT1
 delay_loop2
     decfsz  DELAY_COUNT1,F
@@ -123,9 +137,9 @@ Row1
     movlw   D'2'
     btfsc   PORTB,6
     movlw   D'3'
-    movwf		TempVar
+    movwf   TempVar
 Row2
-    btfss   PORTA,3
+    btfss   PORTA,2
     goto    Row3    
     btfsc   PORTB,4
     movlw   D'4'
@@ -133,9 +147,9 @@ Row2
     movlw   D'5'
     btfsc   PORTB,6
     movlw   D'6'
-    movwf		TempVar
+    movwf   TempVar
 Row3
-    btfss   PORTB,3
+    btfss   PORTB,1
     goto    Row4    
     btfsc   PORTB,4
     movlw   D'7'
@@ -143,14 +157,11 @@ Row3
     movlw   D'8'
     btfsc   PORTB,6
     movlw   D'9'
-    movwf		TempVar
+    movwf   TempVar
 Row4
-    btfss   PORTB,2
-    goto    Row1  
-    btfsc	  PORTB,4
-    nop
     btfsc   PORTB,5
     movlw   D'0'
+    movwf   TempVar
     btfss   PORTB,6
     goto    skip_clear
     clrf    D1
@@ -160,7 +171,7 @@ Row4
     
     
 skip_clear
-	  movwf		TempVar         
+    movwf		TempVar         
     return
     
 ;-------------------------------------------------------------------------------
@@ -191,7 +202,7 @@ CodeCheck
 ;Display U
 Unlock
 ;fixit
-    movlw   B'11111100'
+    movlw   B'11101100'
     movwf   PORTA    
     movlw   B'11111101'
     movwf   PORTB
@@ -199,10 +210,6 @@ Unlock
     call    delay2
     call    delay2
     call    delay2
-    call    delay2
-    call		delay2
-    clrf    PORTB
-    clrf    PORTA
     return
     
 VariableCheck

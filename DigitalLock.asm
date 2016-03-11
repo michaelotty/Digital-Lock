@@ -20,12 +20,13 @@ D4            EQU        H'16'
 TempVar            EQU        H'17' ;Temporary storage of the digit entered by user
 TempVar2            EQU        H'18'
 TempVar3        EQU        H'19'
+Count	    EQU	    H'1A'
 
 org h'0'
     goto    MAIN
-org h'4'
-    call    interrupt
-    return
+;org h'4'
+;    call    interrupt
+;    return
 ;-------------------------------------------------------------------------------
 MAIN
 
@@ -59,13 +60,15 @@ MAIN
 
     ;clrf    PORTB
     
-    clrf    INTCON
-    bsf        INTCON, RBIE        ;Interupts on RB4 -RB7
-    bsf        INTCON, GIE
-    bcf        INTCON, INTF
+;    clrf	INTCON
+;    bsf        INTCON, RBIE        ;Interupts on RB4 -RB7
+;    bsf        INTCON, GIE
+;    bcf        INTCON, INTF
 
 ;-------------------------------------------------------------------------------   
 loop
+    movlw   H'A'
+    movwf   Count
     movfw   D0
     xorlw   D'0'
     btfss   STATUS,Z
@@ -76,7 +79,7 @@ loop
     call    CycleRows
     goto    loop
 
-tag1 ;Leave whatever is on PORTA the way it is
+tag1 ;Leave whatever is on PORTA the way it is 
     call    CycleRows
     goto    loop
     
@@ -85,19 +88,32 @@ CycleRows
 ;Output to row 1
     movlw   B'00000001'
     movwf   PORTB
+    call    ButtonCheck
     call    delay2
 ;Output to row 2    
     movlw   B'00000010'
     movwf   PORTB
+    call    ButtonCheck
     call    delay2
 ;Output to row     
     movlw   B'00000100'
     movwf   PORTB
+    call    ButtonCheck
     call    delay2
 ;Output to row 4    
     movlw   B'00001000'
     movwf   PORTB
+    call    ButtonCheck
     call    delay2
+    return
+    
+ButtonCheck
+    btfsc   PORTB,4
+    call    Push
+    btfsc   PORTB,5
+    call    Push
+    btfsc   PORTB,6
+    call    Push
     return
     
 ;--------------------------------------------------------------------------------    
@@ -125,18 +141,16 @@ delay_loop3
     goto            delay_loop3
     return
 ;-------------------------------------------------------------------------------
-interrupt
+Push
     btfss   TempVar2,0
     goto    tag3
     btfsc   TempVar3,0
     goto    tag2
     call    Conversion
     call    VariableCheck
-    ;ERROR IS SOMEWHERE HERE, SIMULATE AND CHECK
     movfw   D4
     xorlw   D'0'
     btfss   STATUS,Z
-    ;ERROR IS SOMEWHERE HERE, SIMULATE AND CHECK
     call    SwapVariables
     goto    debounce    
       
@@ -169,9 +183,55 @@ debounce
     goto    debounce
     btfsc   PORTB,6
     goto    debounce    
-    call    delay3
-    bcf     INTCON, RBIF
-    retfie
+;    call    delay3
+    return
+;interrupt
+;    btfss   TempVar2,0
+;    goto    tag3
+;    btfsc   TempVar3,0
+;    goto    tag2
+;    call    Conversion
+;    call    VariableCheck
+;    ;ERROR IS SOMEWHERE HERE, SIMULATE AND CHECK
+;    movfw   D4
+;    xorlw   D'0'
+;    btfss   STATUS,Z
+;    ;ERROR IS SOMEWHERE HERE, SIMULATE AND CHECK
+;    call    SwapVariables
+;    goto    debounce    
+;      
+;tag2    
+;    call    Conversion
+;    call    VariableCheck
+;    movfw   D4
+;    xorlw   D'0'
+;    btfss   STATUS,Z
+;    call    CodeCheck2
+;    goto    debounce
+;tag3  
+;    call    Conversion    
+;    call    VariableCheck
+;;    movlw   B'11111011'
+;;    movwf   PORTA
+;    movfw   D4   
+;    xorlw   D'0' ;Checks if the lastdigit has been entered before checking if the digits are correct
+;    btfss   STATUS,Z
+;    call    CodeCheck
+;    movfw   D4   
+;    xorlw   D'0' ;Checks if the lastdigit has been entered before checking if the digits are correct
+;    btfss   STATUS,Z
+;    call    ChangeCheck
+;    
+;debounce
+;    btfsc   PORTB,4
+;    goto    debounce
+;    btfsc   PORTB,5
+;    goto    debounce
+;    btfsc   PORTB,6
+;    goto    debounce    
+;    call    delay3
+;    bcf     INTCON, RBIF
+;    retfie
    
 ;-------------------------------------------------------------------------------
 Conversion
@@ -215,14 +275,12 @@ Row4
     btfsc   PORTB,4
     movlw   D'10' ;10 = *
     btfsc   PORTB,5
-    movlw   D'0'
+    movlw   D'12' ;0 is set to 12 due to the 'xorlw' command that will be used, 
+    ;if 0 is set to 0 the variable will register as empty
     btfsc   PORTB,6
     movlw   D'11' ;11 = #
     movwf   TempVar
     btfss   PORTB,6
-    goto    skip_clear
-    call    clear
-    btfss   PORTB,4
     goto    skip_clear
     call    clear
 skip_clear
@@ -241,7 +299,6 @@ VariableCheck
     movwf   D0
     movlw   B'11111111'
     movwf   PORTA
-    call    delay3
     return
     
 FirstDigit     
@@ -263,7 +320,7 @@ SecondDigit
     movfw   TempVar
     movwf   D2
     movlw   B'11111100'
-    movwf   PORTA    
+    movwf   PORTA	
     return
     
 ThirdDigit     
@@ -284,14 +341,11 @@ FourthDigit
     return
     movfw   TempVar
     movwf   D4
-    movlw   B'11110000'
-    movwf   PORTA
     return     
     
 ;-------------------------------------------------------------------------------
 CodeCheck
 ;Checks each digit against the pre-determined digits when all 4 digits and # have been entered
-    
     movfw   D0
     subwf   Digit0,w    ;Subtract D0 from Digit 1
     btfss   STATUS,Z ;If they are the same the Z flag is set to 0 so the other digits are checked
@@ -321,21 +375,32 @@ CodeCheck
 ;-------------------------------------------------------------------------------
 ;Display U + wait 5 seconds
 Unlock
-    movlw   B'11111010'
-    movwf   PORTA    
-    movlw   B'01110000'
-    movwf   PORTB
-    call    delay
     call    clear
+    call    Flash
+    decfsz  Count
+    goto    Unlock
     return
     
+
+Flash
+    movlw   B'11111010'
+    movwf   PORTA 
+    movlw   B'00000000'
+    movwf   PORTB
+    call    delay
+    movlw   B'11111111'
+    movwf   PORTA
+    movlw   B'11111111'
+    movwf   PORTB
+    call    delay
+    return
 ;-------------------------------------------------------------------------------    
 delay
-    movlw           H'FF'           ;initialise delay counters
+    movlw           H'A8'           ;initialise delay counters
     movwf           DELAY_COUNT1
-    movlw           H'FF'
+    movlw           H'45'
     movwf           DELAY_COUNT2
-    movlw           H'1A'
+    movlw           H'02'
     movwf           DELAY_COUNT3
 delay_loop
     decfsz          DELAY_COUNT1,F  ; inner most loop
@@ -344,7 +409,7 @@ delay_loop
     goto            delay_loop
     decfsz          DELAY_COUNT3,F  ; outer loop
     goto            delay_loop
-    return
+    return  
     
 ;-----------------------------------------------------------------------------     
 clear
@@ -358,7 +423,7 @@ clear
 ChangeCheck
     movfw   D0
     subwf   Digit5,w    
-    btfss   STATUS,Z
+    btfss   STATUS,Z 
     call    clear    ;If the code is incorrect the Variables D0-4 are cleared   
         
     movfw   D1   
@@ -410,7 +475,7 @@ SwapVariables
     clrf    D3
     clrf    D4
     movlw   D'1'
-    movwf   TempVar3
+    movwf   TempVar3 
     return
     
 ;------------------------------------------------------------------------------    
@@ -471,7 +536,7 @@ InitialiseCode
 ;---------------------------------------------------------------------------------------    
 CodeSetUp
 ;If the user sucessfully changes the code, the new code is noved to the reisters and S is displayed
-    movlw   B'11101000'
+    movlw   B'11001001'
     movwf   PORTA
     movfw   D1
     movwf   Digit1
@@ -481,7 +546,7 @@ CodeSetUp
     movwf   Digit3
     movfw   D4
     movwf   Digit4
-    call    clear
+    call    clear 
     clrf    TempVar2
     clrf    TempVar3
     return

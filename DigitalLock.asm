@@ -499,7 +499,7 @@ Unsuccessful
     
 ;-------------------------------------------------------------------------------  
 CodeSetUp
-;If the user sucessfully changes the code, the new code is noved to the reisters
+;If the user sucessfully changes the code, the new code is moved to the registers
 ;and S is displayed
     movlw   B'11100100'
     movwf   PORTA

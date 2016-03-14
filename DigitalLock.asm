@@ -1,3 +1,4 @@
+;Laurabelle Kakulu and Michael Otty
 #include P16F84A.INC
 __config _XT_OSC  &  _WDT_OFF & _PWRTE_ON
 ;File registers used by the TwoHertzDelay
@@ -11,7 +12,7 @@ Digit2              EQU        H'0E'
 Digit3              EQU        H'0F'
 Digit4              EQU        H'10'
 Digit5              EQU        H'11'
-;File registers for digits inuptted by user
+;File registers for digits inputted by user
 D0                  EQU        H'12'
 D1                  EQU        H'13'
 D2                  EQU        H'14'
@@ -21,7 +22,7 @@ TempVar             EQU        H'17' ;Temporary storage of the digit entered by 
 MasterCodeEntered   EQU        H'18' ;Is set to 1 when when the mastercode is entered, otherwise is 0
 NewCodeEntered1     EQU        H'19' ;Is set to 1 when the new code has been entered once
 Count               EQU        H'1A' ;Counter to determine how long 'U' flashes for
-BuzzerCount	    EQU	       H'1B'			       
+BuzzerCount	        EQU	       H'1B'			       
 
 org h'0'
     goto    MAIN
@@ -180,7 +181,7 @@ debounce
     
 Buzz    
     bsf     STATUS,5        ;select bank 1
-    movlw   B'01100000'        ;Set port RB4-6 as inputs
+    movlw   B'01100000'     ;Set port RB4-6 as inputs
     movwf   TRISB
     bcf     STATUS,5 
     call    Beep

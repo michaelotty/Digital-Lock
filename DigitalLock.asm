@@ -24,7 +24,7 @@ NewCodeEntered1	    EQU	    H'19'   ;Is set to 1 when new code has been entered 
 Count		    EQU	    H'1A'   ;Counter to determine how long 'U' flashes
 BuzzerCount	    EQU	    H'1B'			       
 
-    org h'0'
+    org	    h'0'
     goto    MAIN
 
 ;-------------------------------------------------------------------------------

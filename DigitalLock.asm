@@ -1,38 +1,35 @@
 ;Laurabelle Kakulu and Michael Otty
-#include P16F84A.INC
-__config _XT_OSC  &  _WDT_OFF & _PWRTE_ON
+#include    P16F84A.INC
+    __config _XT_OSC	&   _WDT_OFF	&   _PWRTE_ON
 ;File registers used by the TwoHertzDelay
-DELAY_COUNT1        EQU        H'21'
-DELAY_COUNT2        EQU        H'22'
-DELAY_COUNT3        EQU        H'23'
+DELAY_COUNT1	    EQU	    H'21'
+DELAY_COUNT2	    EQU	    H'22'
+DELAY_COUNT3	    EQU	    H'23'
 ;File registers for digits required to unlock/change the code
-Digit0              EQU        H'0C'
-Digit1              EQU        H'0D'
-Digit2              EQU        H'0E'
-Digit3              EQU        H'0F'
-Digit4              EQU        H'10'
-Digit5              EQU        H'11'
+Digit0		    EQU	    H'0C'
+Digit1		    EQU	    H'0D'
+Digit2		    EQU	    H'0E'
+Digit3		    EQU	    H'0F'
+Digit4		    EQU	    H'10'
+Digit5		    EQU	    H'11'
 ;File registers for digits inputted by user
-D0                  EQU        H'12'
-D1                  EQU        H'13'
-D2                  EQU        H'14'
-D3                  EQU        H'15'
-D4                  EQU        H'16'
-TempVar             EQU        H'17' ;Temporary storage of the digit entered by user
-MasterCodeEntered   EQU        H'18' ;Is set to 1 when when the mastercode is entered, otherwise is 0
-NewCodeEntered1     EQU        H'19' ;Is set to 1 when the new code has been entered once
-Count               EQU        H'1A' ;Counter to determine how long 'U' flashes for
-BuzzerCount	        EQU	       H'1B'			       
+D0		    EQU	    H'12'
+D1		    EQU	    H'13'
+D2		    EQU	    H'14'
+D3		    EQU	    H'15'
+D4		    EQU	    H'16'
+TempVar		    EQU	    H'17'   ;Temporary storage of the digit entered by user
+MasterCodeEntered   EQU	    H'18'   ;Is set to 1 when when the mastercode is entered, otherwise is 0
+NewCodeEntered1	    EQU	    H'19'   ;Is set to 1 when new code has been entered once
+Count		    EQU	    H'1A'   ;Counter to determine how long 'U' flashes
+BuzzerCount	    EQU	    H'1B'			       
 
-org h'0'
+    org h'0'
     goto    MAIN
-;org h'4'
-;    call    interrupt
-;    return
+
 ;-------------------------------------------------------------------------------
 MAIN
-
-    bsf     STATUS,5        ;select bank 1
+    bsf	    STATUS,5        ;select bank 1
     movlw   B'01110000'        ;Set port RB4-6 as inputs
     movwf   TRISB
     movlw   B'00000000'        ;Set up all of PORTA as outputs
@@ -60,21 +57,15 @@ MAIN
     clrf    MasterCodeEntered
     clrf    NewCodeEntered1
 
-    ;clrf    PORTB
-    
-;    clrf	INTCON
-;    bsf        INTCON, RBIE        ;Interupts on RB4 -RB7
-;    bsf        INTCON, GIE
-;    bcf        INTCON, INTF
-
-;-------------------------------------------------------------------------------   
+;-------------------------------------------------------------------------------
 loop
     movlw   H'A' 
     movwf   Count ;Count used when the safe is unlocked.
     
     movfw   D0
     xorlw   D'0'
-    btfss   STATUS,Z ;If a digit has been pressed, instead of displaying L, it displays what was last moved to the ports.
+    btfss   STATUS,Z	;If a digit has been pressed, instead of displaying L,
+			;it displays what was last moved to the ports.
     goto    tag1
 ;Display L    
     movlw   B'11110011'
@@ -86,7 +77,7 @@ tag1 ;Leave whatever is on the ports the way it is.
     call    CycleRows
     goto    loop
     
-;-----------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 CycleRows
 ;Output to row 1.
     movlw   B'00000001'
@@ -110,7 +101,7 @@ CycleRows
     call    RowDelay
     return
 
-;-----------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 ;Checks for voltage at RB4-6.    
 ButtonCheck
     btfsc   PORTB,4
@@ -121,11 +112,12 @@ ButtonCheck
     call    PushedButton
     return
     
-;--------------------------------------------------------------------------------   
+;-------------------------------------------------------------------------------
 ;Delay inbetween powering rows.
 RowDelay        
     movlw   H'30'           
     movwf   DELAY_COUNT1
+    
 RowDelay_loop
     decfsz  DELAY_COUNT1,F
     goto    RowDelay_loop  
@@ -137,7 +129,8 @@ PushedButton
     movwf   BuzzerCount
     btfss   MasterCodeEntered,0 ;Checks if the mastercode has been entered.
     goto    tag3 ;If not, skips to tag 3.
-    btfsc   NewCodeEntered1,0 ;Ater the mastercode has been entered, checks if a new code has been etered once.
+    btfsc   NewCodeEntered1,0	;After the mastercode has been entered, checks 
+				;if a new code has been entered once.
     goto    tag2 ;If so, skips to tag2.
     call    Conversion
     call    VariableCheck
@@ -145,7 +138,8 @@ PushedButton
     xorlw   D'0'
     btfss   STATUS,Z
     call    SwapVariables
-    goto    debounce    
+    goto    debounce
+    
 tag2    
     call    Conversion
     call    VariableCheck
@@ -154,17 +148,20 @@ tag2
     btfss   STATUS,Z
     call    CodeCheck2
     goto    debounce
+    
 tag3  
     call    Conversion    
     call    VariableCheck
     movfw   D4   
-    xorlw   D'0' ;Checks if the lastdigit has been entered before checking if the digits are correct.
+    xorlw   D'0'    ;Checks if the lastdigit has been entered before checking if
+		    ;the digits are correct.
     btfss   STATUS,Z
     call    CodeCheck
     movfw   D4   
     xorlw   D'0' 
     btfss   STATUS,Z
     call    ChangeCheck
+    
 debounce   
     btfsc   PORTB,4
     goto    debounce
@@ -200,10 +197,11 @@ Beep
     call    RowDelay
     return   
 ;-------------------------------------------------------------------------------
-;Uses row and column data to determine which number was pressed i.e if RB0 (Row1) and RB4(Col1) are both set, the number pressed was '1'.
+;Uses row and column data to determine which number was pressed i.e if 
+;RB0 (Row1) and RB4(Col1) are both set, the number pressed was '1'.
 Conversion
 Row1
-    btfss   PORTB,0 ;if thre is no voltage at this row, it skips to the next one.
+    btfss   PORTB,0 ;If thre is no voltage at this row, it skips to the next one
     goto    Row2    
     btfsc   PORTB,4 
     movlw   D'1'
@@ -213,6 +211,7 @@ Row1
     movlw   D'3'
     movwf   TempVar ;Move the correct value to the temporary storage.
     return
+    
 Row2
     btfss   PORTB,1
     goto    Row3
@@ -224,6 +223,7 @@ Row2
     movlw   D'6'
     movwf   TempVar
     return
+    
 Row3
     btfss   PORTB,2
     goto    Row4   
@@ -235,23 +235,25 @@ Row3
     movlw   D'9'
     movwf   TempVar
     return
+    
 Row4
     btfss   PORTB,3
     return
     btfsc   PORTB,4
-    movlw   D'10' ;10 = *
+    movlw   D'10'   ;10 = *
     btfsc   PORTB,5
-    movlw   D'12' ;0 is set to 12 because a value of 0 would cause a variable to register as empty.
+    movlw   D'12'   ;0 is set to 12 because a value of 0 would cause a variable 
+		    ;to register as empty.
     btfsc   PORTB,6
-    movlw   D'11' ;11 = #
+    movlw   D'11'   ;11 = #
     movwf   TempVar
     btfss   PORTB,6
     goto    skip_clear
     call    clear
+    
 skip_clear
     movwf   TempVar  
     return
-    
     
 ;-------------------------------------------------------------------------------
 VariableCheck  
@@ -310,10 +312,12 @@ FourthDigit
     
 ;-------------------------------------------------------------------------------
 CodeCheck
-;Checks each digit against the pre-determined digits when all 4 digits and # have been entered
+;Checks each digit against the pre-determined digits when all 4 digits and # 
+;have been entered
     movfw   D0
     subwf   Digit0,w    ;Subtract D0 from Digit 1
-    btfss   STATUS,Z ;If they are the same the Z flag is set to 1 so the other digits are checked
+    btfss   STATUS,Z;If they are the same the Z flag is set to 1 so the other
+		    ;digits are checked
     return   
         
     movfw   D1   
@@ -361,24 +365,25 @@ Flash
     call    TwoHertzDelay
     return
     
-;-------------------------------------------------------------------------------    
+;-------------------------------------------------------------------------------
 TwoHertzDelay
-    movlw           H'A8'           ;initialise TwoHertzDelay counters
-    movwf           DELAY_COUNT1
-    movlw           H'45'
-    movwf           DELAY_COUNT2
-    movlw           H'02'
-    movwf           DELAY_COUNT3
+    movlw   H'A8'           ;initialise TwoHertzDelay counters
+    movwf   DELAY_COUNT1
+    movlw   H'45'
+    movwf   DELAY_COUNT2
+    movlw   H'02'
+    movwf   DELAY_COUNT3
+    
 TwoHertzDelay_loop
-    decfsz          DELAY_COUNT1,F  ; inner most loop
-    goto            TwoHertzDelay_loop      ; decrements and loops until TwoHertzDelay_count1=0
-    decfsz          DELAY_COUNT2,F  ; middle loop
-    goto            TwoHertzDelay_loop
-    decfsz          DELAY_COUNT3,F  ; outer loop
-    goto            TwoHertzDelay_loop
+    decfsz  DELAY_COUNT1,F	;inner most loop
+    goto    TwoHertzDelay_loop;decrements and loops until TwoHertzDelay_count1=0
+    decfsz  DELAY_COUNT2,F	;middle loop
+    goto    TwoHertzDelay_loop
+    decfsz  DELAY_COUNT3,F	;outer loop
+    goto    TwoHertzDelay_loop
     return  
     
-;-------------------------------------------------------------------------------     
+;-------------------------------------------------------------------------------
 clear
     clrf    D0
     clrf    D1
@@ -388,11 +393,12 @@ clear
     return
     
 ChangeCheck
-;If the code entered doesn't match the unlock code, the code is checked against the master code.
+;If the code entered doesn't match the unlock code, the code is checked against
+;the master code.
     movfw   D0
     subwf   Digit5,w    
     btfss   STATUS,Z 
-    call    clear    ;If the code is incorrect the Variables D0-4 are cleared   
+    call    clear    ;If the code is incorrect the Variables D0-4 are cleared
         
     movfw   D1   
     subwf   Digit4,w
@@ -422,7 +428,7 @@ tag5
     call    clear
     return
     
-;------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 ;After the new code has been ebtered once, it swaps the variables
 SwapVariables
     movlw   B'00000000'
@@ -446,53 +452,55 @@ SwapVariables
     movwf   NewCodeEntered1 
     return
     
-;------------------------------------------------------------------------------    
+;-------------------------------------------------------------------------------
 ;Checks that the two new codes entered by the user are the same
 CodeCheck2
     movfw   D0
     subwf   Digit0,w    
     btfss   STATUS,Z    
-    goto    Unsucessful    
+    goto    Unsuccessful    
         
     movfw   D1   
     subwf   Digit1,w
     btfss   STATUS,Z
-    goto    Unsucessful
+    goto    Unsuccessful
     
     movfw   D2
     subwf   Digit2,w
     btfss   STATUS,Z
-    goto    Unsucessful
+    goto    Unsuccessful
     
     movfw   D3
     subwf   Digit3,w
     btfss   STATUS,Z
-    goto    Unsucessful
+    goto    Unsuccessful
     
     movfw   D4
     subwf   Digit4,w
     btfsc   STATUS,Z
     goto    tag4
-    goto    Unsucessful ;If the two codes do not match, reset the code to #1234
+    goto    Unsuccessful ;If the two codes do not match, reset the code to #1234
     
 
 tag4
     call    CodeSetUp
     return
     
-Unsucessful    
+Unsuccessful    
     ;Display n
     movlw   B'11111000'
     movwf   PORTA
     movlw   B'11111111'
     movwf   PORTB
     call    TwoHertzDelay
-    call    InitialiseCode ;If the two codes do not match, reset the code to #1234
+    call    InitialiseCode  ;If the two codes do not match, reset the code to 
+			    ;#1234
     return
     
-;---------------------------------------------------------------------------------------    
+;-------------------------------------------------------------------------------  
 CodeSetUp
-;If the user sucessfully changes the code, the new code is noved to the reisters and S is displayed
+;If the user sucessfully changes the code, the new code is noved to the reisters
+;and S is displayed
     movlw   B'11100100'
     movwf   PORTA
     call    TwoHertzDelay
@@ -509,7 +517,7 @@ CodeSetUp
     clrf    NewCodeEntered1
     return
     
-;------------------------------------------------------------------------------------
+;-------------------------------------------------------------------------------
 ;If the user fails to change the code, it resets to #1234
 InitialiseCode
     movlw   D'11' ;11 = #
@@ -527,6 +535,4 @@ InitialiseCode
     call    clear
     return
     
-
-end
-
+    end

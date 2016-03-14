@@ -21,6 +21,7 @@ TempVar             EQU        H'17' ;Temporary storage of the digit entered by 
 MasterCodeEntered   EQU        H'18' ;Is set to 1 when when the mastercode is entered, otherwise is 0
 NewCodeEntered1     EQU        H'19' ;Is set to 1 when the new code has been entered once
 Count               EQU        H'1A' ;Counter to determine how long 'U' flashes for
+BuzzerCount	    EQU	       H'1B'			       
 
 org h'0'
     goto    MAIN
@@ -126,11 +127,13 @@ RowDelay
     movwf   DELAY_COUNT1
 RowDelay_loop
     decfsz  DELAY_COUNT1,F
-    goto    RowDelay_oop2  
+    goto    RowDelay_loop  
     return
     
 ;-------------------------------------------------------------------------------
 PushedButton
+    movlw   D'255'
+    movwf   BuzzerCount
     btfss   MasterCodeEntered,0 ;Checks if the mastercode has been entered.
     goto    tag3 ;If not, skips to tag 3.
     btfsc   NewCodeEntered1,0 ;Ater the mastercode has been entered, checks if a new code has been etered once.
@@ -142,7 +145,6 @@ PushedButton
     btfss   STATUS,Z
     call    SwapVariables
     goto    debounce    
-      
 tag2    
     call    Conversion
     call    VariableCheck
@@ -162,16 +164,40 @@ tag3
     xorlw   D'0' 
     btfss   STATUS,Z
     call    ChangeCheck
-    
-debounce
+debounce   
     btfsc   PORTB,4
     goto    debounce
     btfsc   PORTB,5
     goto    debounce
     btfsc   PORTB,6
-    goto    debounce    
+    goto    debounce
+    call    Buzz
+    bsf     STATUS,5        ;select bank 1
+    movlw   B'01110000'        ;Set port RB4-6 as inputs
+    movwf   TRISB
+    bcf     STATUS,5
     return
-   
+    
+Buzz    
+    bsf     STATUS,5        ;select bank 1
+    movlw   B'01100000'        ;Set port RB4-6 as inputs
+    movwf   TRISB
+    bcf     STATUS,5 
+    call    Beep
+    decfsz  BuzzerCount
+    goto    Buzz 
+    return
+    
+Beep
+    movlw   B'00010000'
+    movwf   PORTB
+    call    RowDelay
+    call    RowDelay
+    movlw   B'00000000'
+    movwf   PORTB
+    call    RowDelay    
+    call    RowDelay
+    return   
 ;-------------------------------------------------------------------------------
 ;Uses row and column data to determine which number was pressed i.e if RB0 (Row1) and RB4(Col1) are both set, the number pressed was '1'.
 Conversion
@@ -420,22 +446,22 @@ SwapVariables
     return
     
 ;------------------------------------------------------------------------------    
-;Checks tha the two new codes entered by the user are the same
+;Checks that the two new codes entered by the user are the same
 CodeCheck2
     movfw   D0
     subwf   Digit0,w    
     btfss   STATUS,Z    
-    goto	  Unsucessful    
+    goto    Unsucessful    
         
     movfw   D1   
     subwf   Digit1,w
     btfss   STATUS,Z
-    got    Unsucessful
+    goto    Unsucessful
     
     movfw   D2
     subwf   Digit2,w
     btfss   STATUS,Z
-    got    Unsucessful
+    goto    Unsucessful
     
     movfw   D3
     subwf   Digit3,w
@@ -459,14 +485,16 @@ Unsucessful
     movwf   PORTA
     movlw   B'11111111'
     movwf   PORTB
-    call	  Initialise Code ;If the two codes do not match, reset the code to #1234
+    call    TwoHertzDelay
+    call    InitialiseCode ;If the two codes do not match, reset the code to #1234
     return
     
 ;---------------------------------------------------------------------------------------    
 CodeSetUp
 ;If the user sucessfully changes the code, the new code is noved to the reisters and S is displayed
-    movlw   B'11001001'
+    movlw   B'11100100'
     movwf   PORTA
+    call    TwoHertzDelay
     movfw   D1
     movwf   Digit1
     movfw   D2
@@ -495,6 +523,7 @@ InitialiseCode
     movwf   Digit4
     movlw   D'10' ;10 = *
     movwf   Digit5
+    call    clear
     return
     
 
